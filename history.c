@@ -41,7 +41,7 @@ void add_history(struct history* history, char* command, int exitStatus){
         // history->entries[MAXHISTORY - 1] = calloc(1, sizeof(*history->entries));
     }
 
-    for (i = history->offset; i > 0; --i){
+    for (i = history->offset; i > 0; i--){
         history->entries[i] = history->entries[i-1];
     }
     history->entries[0] = cmdToAdd;
