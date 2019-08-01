@@ -7,7 +7,7 @@ struct history* init_history(int capacity){
     struct history* retVal = malloc(sizeof(struct history));
     retVal->capacity = capacity;
     retVal->offset = 0;
-    retVal->entries = calloc((capacity + 1), sizeof(*retVal->entries)); /*
+    retVal->entries = calloc((capacity), sizeof(*retVal->entries)); /*
                                                                           * assign the entries member to the value of the pointer returned by malloc.
                                                                           * *retVal->entries dereferences retVal (via ->) and then dereferences
                                                                           * entries (via *).  *entries == cmd*
@@ -32,7 +32,7 @@ void add_history(struct history* history, char* command, int exitStatus){
     cmdToAdd->pid = 0;
     cmdToAdd->exitStatus = exitStatus;
     cmdToAdd->cmd = malloc(MAXLINE);
-    strncpy(cmdToAdd->cmd, command, strlen(command) + 1);
+    strncpy(cmdToAdd->cmd, command, MAXLINE);
 
     if (history->offset >= MAXHISTORY){
         free(history->entries[MAXHISTORY - 1]->cmd);
