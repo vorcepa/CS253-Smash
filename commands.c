@@ -104,7 +104,7 @@ int doChangeDirectory(char* inputDirectory, char* flags){
     cdErrNum = chdir(targetDirectory);
     // if the attempt to change directory failed, try again, but concatenating the inputDirectory to the end of the current working directory
     if (cdErrNum != 0){
-        strncpy(targetFullDirectory, currentWorkingDirectory, strlen(currentWorkingDirectory));
+        strncpy(targetFullDirectory, currentWorkingDirectory, PATH_BUFFER);
         strncat(targetFullDirectory, "/", strlen("/"));
         if (inputDirectory[0] == '/'){
             inputDirectory++;
@@ -113,7 +113,7 @@ int doChangeDirectory(char* inputDirectory, char* flags){
         cdErrNum = chdir(targetFullDirectory);
     }
     if (cdErrNum == 0){
-        strncpy(oldWorkingDirectory, prevWorkingDirectory, strlen(prevWorkingDirectory) + 1);
+        strncpy(oldWorkingDirectory, prevWorkingDirectory, PATH_BUFFER);
 
         getcwd(currentWorkingDirectory, sizeof(currentWorkingDirectory));
         getcwd(prevWorkingDirectory, sizeof(prevWorkingDirectory));
@@ -162,7 +162,7 @@ void executeCommand(char* userInputTokens){
     bool firstArg = true;
     int currentNumFlags = 0;
     const char* internalCommands[3] = {"cd", "history", "exit"};
-    enum Commands command;
+    enum Commands command = external;
     char flagsToProcess[TOKEN_BUFFER] = {0};
     char* getFlags = calloc(1, sizeof(char*));
     *getFlags = 0;
@@ -260,6 +260,7 @@ void executeCommand(char* userInputTokens){
 
     memset(historyCommand, 0, MAXLINE);
     memset(flagsToProcess, 0, TOKEN_BUFFER);
+    free(getFlags);
 
     return;
 }
