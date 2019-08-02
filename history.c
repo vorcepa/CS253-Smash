@@ -35,14 +35,14 @@ void add_history(struct history* history, char* command, int exitStatus){
     cmdToAdd->cmd = malloc(MAXLINE);
     strncpy(cmdToAdd->cmd, command, MAXLINE);
 
-    if (history->offset > MAXHISTORY){
-        free(history->entries[MAXHISTORY]->cmd);
-        free(history->entries[MAXHISTORY]);
+    if (history->offset > MAXHISTORY - 1){
+        free(history->entries[MAXHISTORY - 1]->cmd);
+        free(history->entries[MAXHISTORY - 1]);
 
-        history->entries[MAXHISTORY] = calloc(1, sizeof(history->entries[0]));
-        history->entries[MAXHISTORY] = history->entries[MAXHISTORY - 1];
-        history->entries[MAXHISTORY]->cmd = calloc(1, sizeof(history->entries[0]->cmd));
-        history->entries[MAXHISTORY]->cmd = history->entries[MAXHISTORY - 1]->cmd;
+        history->entries[MAXHISTORY - 1] = calloc(1, sizeof(history->entries[0]));
+        history->entries[MAXHISTORY - 1] = history->entries[MAXHISTORY - 2];
+        history->entries[MAXHISTORY - 1]->cmd = calloc(1, sizeof(history->entries[0]->cmd));
+        history->entries[MAXHISTORY - 1]->cmd = history->entries[MAXHISTORY - 2]->cmd;
         history->offset--;
     }
 
