@@ -27,7 +27,7 @@ struct history* his = NULL;
  *  This is processing flags, which means the token starts with the '-' and is more than 1 character long.
  *  always start processing characters from [1] rather than [0]
  */
-char* processChDirFlag(char* token, char* currentFlags, int currentNumFlags){
+char* processChDirFlag(char* token, char* currentFlags, long unsigned int currentNumFlags){
     int i;
     int j; 
     int nextFlag = 0;
@@ -203,6 +203,7 @@ void executeCommand(char* userInputTokens){
                         getFlags = processChDirFlag(token, flagsToProcess, currentNumFlags);
                         if (strcmp(getFlags, "errorB") == 0){
                             printf("Error: too many arguments/arguments too long.\n");
+                            free(getFlags);
                             return; // RETURNS VOID (as opposed to exitStatus), SO PROBABLY PRINT ERROR?
                         }
                         else if (strlen(flagsToProcess) == 0){
@@ -251,6 +252,7 @@ void executeCommand(char* userInputTokens){
             print_history(his);
             break;
         case (stop):
+            free(getFlags);
             clear_history(his);
             doExit(externalFlags, currentNumFlags);
             break;

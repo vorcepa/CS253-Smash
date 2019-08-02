@@ -20,6 +20,7 @@ int print_history(struct history* toPrint){
 
     for (i = (toPrint->offset) - 1; i >= 0; i--){
         printf("%d [%d] %s\n", i + 1, toPrint->entries[i]->exitStatus, toPrint->entries[i]->cmd);
+        fflush(stdout);
     }
 
     return 0;
@@ -34,11 +35,15 @@ void add_history(struct history* history, char* command, int exitStatus){
     cmdToAdd->cmd = malloc(MAXLINE);
     strncpy(cmdToAdd->cmd, command, MAXLINE);
 
-    if (history->offset > MAXHISTORY - 1){
-        free(history->entries[MAXHISTORY - 1]->cmd);
-        free(history->entries[MAXHISTORY - 1]);
+    if (history->offset > MAXHISTORY){
+        free(history->entries[MAXHISTORY]->cmd);
+        free(history->entries[MAXHISTORY]);
 
-        // history->entries[MAXHISTORY - 1] = calloc(1, sizeof(*history->entries));
+        history->entries[MAXHISTORY] = calloc(1, sizeof(history->entries[0]));
+        history->entries[MAXHISTORY] = history->entries[MAXHISTORY - 1];
+        history->entries[MAXHISTORY]->cmd = calloc(1, sizeof(history->entries[0]->cmd));
+        history->entries[MAXHISTORY]->cmd = history->entries[MAXHISTORY - 1]->cmd;
+        history->offset--;
     }
 
     for (i = history->offset; i > 0; i--){
@@ -46,17 +51,18 @@ void add_history(struct history* history, char* command, int exitStatus){
     }
     history->entries[0] = cmdToAdd;
 
-    if (history->offset < MAXHISTORY - 1){
-        (history->offset)++;
-    }
+    history->offset++;
 }
 
 void clear_history(struct history* history){
     int i;
-    for (i = 0; history->entries[i] != NULL; i++){
+    for (i = 0; history->entries[i] == 0x0; i++){
         free(history->entries[i]->cmd);
+        history->entries[i]->cmd = NULL;
         free(history->entries[i]);
+        history->entries[i] = NULL;
     }
 
+    free(history->entries);
     free(history);
 }
