@@ -53,7 +53,7 @@ void add_history(struct history* history, char* command, int exitStatus){
 
 void clear_history(struct history* history){
     int i;
-    for (i = 0; i < history->offset; i++){
+    for (i = 0; history->entries[i] != NULL; i++){
         free(history->entries[i]->cmd);
         free(history->entries[i]);
     }

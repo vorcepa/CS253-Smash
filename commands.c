@@ -36,7 +36,7 @@ char* processChDirFlag(char* token, char* currentFlags, int currentNumFlags){
     *retVal = 0;
 
     if (strlen(token) > (TOKEN_BUFFER - currentNumFlags)){
-        retVal = "errorB";
+        strncpy(retVal, "errorB", TOKEN_BUFFER);
     }
     else{
         for (i = 1; i < strlen(token); i++){
@@ -59,6 +59,8 @@ char* processChDirFlag(char* token, char* currentFlags, int currentNumFlags){
             }
         }
     }
+
+    retVal[strlen(retVal)] = '\0';
 
     return retVal;
 }
