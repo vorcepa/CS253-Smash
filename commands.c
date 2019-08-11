@@ -15,7 +15,7 @@
 
 #define PATH_BUFFER 1024
 
-enum Commands{changeDirectory, stop, external, history};
+// enum Commands{changeDirectory, stop, external, history};
 char oldWorkingDirectory[PATH_BUFFER] = {0};
 char currentWorkingDirectory[PATH_BUFFER];
 char prevWorkingDirectory[PATH_BUFFER];
@@ -144,121 +144,59 @@ void doExit(char** flags, int numFlags){
     exit(0);
 }
 
+char** pipeTokenizer(char* userInput){
+    char** retVal;
+    int pipeCount = 0;
+    int i;
+    char* token;
 
-void executeCommand(char* userInputTokens){
+    for (i = 0; i < strlen(userInput); i++){
+        if (userInput[i] == '|'){
+            pipeCount++;
+        }
+    }
+
+    token = strtok(userInput, "|");
+
+    printf("pipe count: %d\n", pipeCount);
+    retVal = calloc(pipeCount + 1, sizeof(char*));
+    i = 0;
+    while (token != NULL){
+        retVal[i] = token;
+        i++;
+        token = strtok(NULL, "|");
+    }
+
+    for (i = 0; i < pipeCount + 1; i++){
+        printf("pipeTokenizer retVal [%d]: %s\n", i, retVal[i]);
+    }
+    return retVal;
+}
+
+char** commandTokenizer(char* userInput, char* delimiter){
+    strtok(userInput, delimiter);
+
+    return NULL;
+}
+
+void executeCommand(char* userInput){
+    /*********** TEMPORARY ************/
+    int i;
+    int pipeCount = 0;
+    for (i = 0; i < strlen(userInput); i++){
+        if (userInput[i] == '|'){
+            pipeCount++;
+        }
+    }
+    /*********** TEMPORARY ************/
+
     // copy the whole string for history
     char historyCommand[MAXLINE];
-    strncpy(historyCommand, userInputTokens, strlen(userInputTokens) + 1);
+    char delimiter[3] = " \t";
+    strncpy(historyCommand, userInput, strlen(userInput) + 1);
 
-    int commandExitStatus = 0;
-    char* token = strtok(userInputTokens, " ");
-    bool stopCheckingTokens = false;
-    bool firstArg = true;
-    int currentNumFlags = 0;
-    const char* internalCommands[3] = {"cd", "history", "exit"};
-    enum Commands command = external;
-    char flagsToProcess[TOKEN_BUFFER] = {0};
-    char* getFlags = calloc(1, sizeof(char*));
-    *getFlags = 0;
-    char* targetDirectory = NULL;
-    char** externalFlags = calloc(TOKEN_BUFFER, sizeof(char*));
-
-    // only initialize once
-    if (his == NULL){
-        his = init_history(MAXHISTORY);
+    char** commands = pipeTokenizer(userInput);
+    for (i = 0; i < pipeCount + 1; i++){
+        printf("eC commands[%d]: %s\n", i, commands[i]);
     }
-    // real cd bash stops checking args once it has a directory
-    while (token != NULL && !stopCheckingTokens) {
-        if (firstArg){
-            if (strcmp(internalCommands[0], token) == 0){
-                command = changeDirectory;
-            }
-            else if (strcmp(internalCommands[1], token) == 0){
-                command = history;
-            }
-            else if (strcmp(internalCommands[2], token) == 0){
-                command = stop;
-            }
-            else{
-                command = external;
-                externalFlags[currentNumFlags] = token;
-                currentNumFlags++;
-            }
-
-            firstArg = false;
-        }
-        else{
-            switch (command){
-                case changeDirectory:
-                    // check strlen on '-', since "cd -" prints the directory above the current, then moves there
-                    if (token[0] == '-' && strlen(token) > 1){
-                        getFlags = processChDirFlag(token, flagsToProcess, currentNumFlags);
-                        if (strcmp(getFlags, "errorB") == 0){
-                            printf("Error: too many arguments/arguments too long.\n");
-                            free(getFlags);
-                            return; // RETURNS VOID (as opposed to exitStatus), SO PROBABLY PRINT ERROR?
-                        }
-                        else if (strlen(flagsToProcess) == 0){
-                            strncpy(flagsToProcess, getFlags, strlen(getFlags));
-                        }
-                        else{
-                            strncat(flagsToProcess, getFlags, strlen(getFlags));
-                        }
-                        currentNumFlags = strlen(flagsToProcess);
-                    }
-                    else if (targetDirectory == NULL){
-                        targetDirectory = token;
-                        stopCheckingTokens = true;
-                    }
-                    break;
-                case external:
-                    externalFlags[currentNumFlags] = token;
-                    currentNumFlags++;
-                    break;
-                case history:
-                    stopCheckingTokens = true;
-                    break;
-
-                case stop:
-                    externalFlags[currentNumFlags] = token;
-                    currentNumFlags++;
-                    stopCheckingTokens = true;
-                    break;
-            }
-        }
-
-        token = strtok(NULL, " ");
-    }
-
-    // wait for while loop to finish, then call the appropriate function
-    switch (command){
-        case (changeDirectory):
-            commandExitStatus = doChangeDirectory(targetDirectory, flagsToProcess);
-            break;
-        case (external):
-            commandExitStatus = executeExternalCommand(externalFlags[0], externalFlags);
-            break;
-        case (history):
-            commandExitStatus = 0;
-            add_history(his, historyCommand, commandExitStatus);
-            print_history(his);
-            break;
-        case (stop):
-            free(getFlags);
-            clear_history(his);
-            free(externalFlags);
-            doExit(externalFlags, currentNumFlags);
-            break;
-    }
-
-    if (command != history){
-        add_history(his, historyCommand, commandExitStatus);
-    }
-
-    memset(historyCommand, 0, MAXLINE);
-    memset(flagsToProcess, 0, TOKEN_BUFFER);
-    free(getFlags);
-    free(externalFlags);
-
-    return;
 }
