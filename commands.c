@@ -144,22 +144,13 @@ void doExit(char** flags, int numFlags){
     exit(0);
 }
 
-char** pipeTokenizer(char* userInput){
-    char** retVal;
-    int pipeCount = 0;
+char** pipeTokenizer(char* userInput, int pipeCount){
+    char** retVal = calloc(pipeCount + 1, sizeof(char*));
     int i;
     char* token;
 
-    for (i = 0; i < strlen(userInput); i++){
-        if (userInput[i] == '|'){
-            pipeCount++;
-        }
-    }
-
     token = strtok(userInput, "|");
 
-    printf("pipe count: %d\n", pipeCount);
-    retVal = calloc(pipeCount + 1, sizeof(char*));
     i = 0;
     while (token != NULL){
         retVal[i] = token;
@@ -167,20 +158,26 @@ char** pipeTokenizer(char* userInput){
         token = strtok(NULL, "|");
     }
 
-    for (i = 0; i < pipeCount + 1; i++){
-        printf("pipeTokenizer retVal [%d]: %s\n", i, retVal[i]);
-    }
     return retVal;
 }
 
-char** commandTokenizer(char* userInput, char* delimiter){
-    strtok(userInput, delimiter);
+char** commandTokenizer(char* command, char* delimiter){
+    int i = 0;
+    char** retVal = calloc(TOKEN_BUFFER, sizeof(char*));
+    char* token = strtok(command, delimiter);
 
-    return NULL;
+    while (token != NULL){
+        retVal[i] = token;
+        i++;
+
+        token = strtok(NULL, delimiter);
+    }
+
+    return retVal;
 }
 
 void executeCommand(char* userInput){
-    /*********** TEMPORARY ************/
+    char delimiter[3] = " \t";
     int i;
     int pipeCount = 0;
     for (i = 0; i < strlen(userInput); i++){
@@ -188,15 +185,24 @@ void executeCommand(char* userInput){
             pipeCount++;
         }
     }
-    /*********** TEMPORARY ************/
 
     // copy the whole string for history
     char historyCommand[MAXLINE];
-    char delimiter[3] = " \t";
     strncpy(historyCommand, userInput, strlen(userInput) + 1);
 
-    char** commands = pipeTokenizer(userInput);
+    char** commands = pipeTokenizer(userInput, pipeCount);
+    char*** tokenizedCommands = calloc(TOKEN_BUFFER, sizeof(char**));
+
     for (i = 0; i < pipeCount + 1; i++){
-        printf("eC commands[%d]: %s\n", i, commands[i]);
+        tokenizedCommands[i] = commandTokenizer(commands[i], delimiter);
+    }
+
+    int j;
+    for (i = 0; tokenizedCommands[i] != NULL; i++){
+        printf("Current command: %s\n\n", commands[i]);
+        for (j = 0; tokenizedCommands[i][j] != NULL; j++){
+            printf("arg[%d]: %s\n", j, tokenizedCommands[i][j]);
+        }
+        printf("\n");
     }
 }
