@@ -1,0 +1,13 @@
+ls
+ls ..
+cd ..
+pwd
+cd -
+history
+mkdir -p rabble
+mkdir
+rm -rf rabble
+grep
+diff history.c executeExternal.c
+cd /
+history

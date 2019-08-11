@@ -1,0 +1,2 @@
+
+int executeExternalCommand(char*, char**);

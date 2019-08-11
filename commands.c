@@ -7,9 +7,10 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include "history.h"
+#include "executeExternal.h"
 
 #ifndef TOKEN_BUFFER
-    #define TOKEN_BUFFER 32
+    #define TOKEN_BUFFER 1024
 #endif
 
 #define PATH_BUFFER 1024
@@ -135,15 +136,6 @@ int doChangeDirectory(char* inputDirectory, char* flags){
     return exitStatus;
 }
 
-int doExternal(char** tokens, int numTokens){
-    int i;
-    for (i = 0; i < numTokens; i++){
-        printf("[%d] %s\n", i, tokens[i]);
-    }
-
-    return 127;
-}
-
 void doExit(char** flags, int numFlags){
     if (numFlags != 0){
         printf("smash: exit: %s -- invalid argument\n", flags[0]);
@@ -169,7 +161,7 @@ void executeCommand(char* userInputTokens){
     char* getFlags = calloc(1, sizeof(char*));
     *getFlags = 0;
     char* targetDirectory = NULL;
-    char* externalFlags[TOKEN_BUFFER];
+    char** externalFlags = calloc(TOKEN_BUFFER, sizeof(char*));
 
     // only initialize once
     if (his == NULL){
@@ -244,7 +236,7 @@ void executeCommand(char* userInputTokens){
             commandExitStatus = doChangeDirectory(targetDirectory, flagsToProcess);
             break;
         case (external):
-            commandExitStatus =  doExternal(externalFlags, currentNumFlags);
+            commandExitStatus = executeExternalCommand(externalFlags[0], externalFlags);
             break;
         case (history):
             commandExitStatus = 0;
@@ -254,6 +246,7 @@ void executeCommand(char* userInputTokens){
         case (stop):
             free(getFlags);
             clear_history(his);
+            free(externalFlags);
             doExit(externalFlags, currentNumFlags);
             break;
     }
@@ -265,6 +258,7 @@ void executeCommand(char* userInputTokens){
     memset(historyCommand, 0, MAXLINE);
     memset(flagsToProcess, 0, TOKEN_BUFFER);
     free(getFlags);
+    free(externalFlags);
 
     return;
 }

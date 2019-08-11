@@ -18,8 +18,8 @@ struct history* init_history(int capacity){
 int print_history(struct history* toPrint){
     int i;
 
-    for (i = (toPrint->offset) - 1; i >= 0; i--){
-        printf("%d [%d] %s\n", i + 1, toPrint->entries[i]->exitStatus, toPrint->entries[i]->cmd);
+    for (i = 0; i <= (toPrint->offset) - 1; i++){
+        printf("%d [%d] %s\n", toPrint->offset - i, toPrint->entries[i]->exitStatus, toPrint->entries[i]->cmd);
         fflush(stdout);
     }
 
@@ -27,36 +27,25 @@ int print_history(struct history* toPrint){
 }
 
 void add_history(struct history* history, char* command, int exitStatus){
-    int i;
-
     struct cmd* cmdToAdd = malloc(sizeof(*cmdToAdd));
     cmdToAdd->pid = 0;
     cmdToAdd->exitStatus = exitStatus;
     cmdToAdd->cmd = malloc(MAXLINE);
     strncpy(cmdToAdd->cmd, command, MAXLINE);
 
-    if (history->offset > MAXHISTORY - 1){
-        free(history->entries[MAXHISTORY - 1]->cmd);
-        free(history->entries[MAXHISTORY - 1]);
-
-        history->entries[MAXHISTORY - 1] = calloc(1, sizeof(history->entries[0]));
-        history->entries[MAXHISTORY - 1] = history->entries[MAXHISTORY - 2];
-        history->entries[MAXHISTORY - 1]->cmd = calloc(1, sizeof(history->entries[0]->cmd));
-        history->entries[MAXHISTORY - 1]->cmd = history->entries[MAXHISTORY - 2]->cmd;
+    if (history->offset == MAXHISTORY){
+        free(history->entries[0]->cmd);
+        free(history->entries[0]);
+        memmove(&history->entries[0], &history->entries[1], (MAXHISTORY - 1) * sizeof (*history->entries));
         history->offset--;
     }
 
-    for (i = history->offset; i > 0; i--){
-        history->entries[i] = history->entries[i-1];
-    }
-    history->entries[0] = cmdToAdd;
-
-    history->offset++;
+    history->entries[history->offset++] = cmdToAdd;
 }
 
 void clear_history(struct history* history){
     int i;
-    for (i = 0; history->entries[i] == 0x0; i++){
+    for (i = 0; i < history->offset; i++){
         free(history->entries[i]->cmd);
         history->entries[i]->cmd = NULL;
         free(history->entries[i]);
