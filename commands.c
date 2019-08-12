@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include "history.h"
-#include "executeExternal.h"
+#include "doCommand.h"
 
 #ifndef TOKEN_BUFFER
     #define TOKEN_BUFFER 1024
@@ -15,7 +15,6 @@
 
 #define PATH_BUFFER 1024
 
-// enum Commands{changeDirectory, stop, external, history};
 char oldWorkingDirectory[PATH_BUFFER] = {0};
 char currentWorkingDirectory[PATH_BUFFER];
 char prevWorkingDirectory[PATH_BUFFER];
@@ -176,33 +175,74 @@ char** commandTokenizer(char* command, char* delimiter){
     return retVal;
 }
 
-void executeCommand(char* userInput){
-    char delimiter[3] = " \t";
+FILE** getIOStreams(char** argv, int numArgs){
+    char* inputRedirect = NULL;
+    char* outputRedirect = NULL;
+
+    FILE** retVal = calloc(2, sizeof(FILE*));
+    retVal[0] = stdin;
+    retVal[1] = stdout;
+
     int i;
-    int pipeCount = 0;
-    for (i = 0; i < strlen(userInput); i++){
-        if (userInput[i] == '|'){
-            pipeCount++;
+    for (i = 0; i < numArgs; i++){
+        switch (argv[i][0])
+        {
+        case '<':
+            inputRedirect = argv[i] + 1;
+            memmove(&argv[i], &argv[i+1], (numArgs - i) * sizeof(char*));
+            break;
+        
+        default:
+            outputRedirect = argv[i] + 1;
+            memmove(&argv[i], &argv[i+1], (numArgs - i) * sizeof(char*));
+            break;
         }
     }
+
+    if(inputRedirect != NULL){
+        retVal[0] = fopen(inputRedirect, "r");
+    }
+    if (outputRedirect != NULL){
+        retVal[1] = fopen(outputRedirect, "w+");
+    }
+
+    return retVal;
+}
+
+void processCommand(char* userInput){
+    if (strlen(userInput) == 0){
+        return;
+    }
+
+    char delimiter[3] = " \t";
+    int i;
+    int numCommands = 1;
+    for (i = 0; i < strlen(userInput); i++){
+        if (userInput[i] == '|'){
+            numCommands++;
+        }
+    }
+    FILE** streams;
 
     // copy the whole string for history
     char historyCommand[MAXLINE];
     strncpy(historyCommand, userInput, strlen(userInput) + 1);
 
-    char** commands = pipeTokenizer(userInput, pipeCount);
+    char** commands = pipeTokenizer(userInput, numCommands - 1);
     char*** tokenizedCommands = calloc(TOKEN_BUFFER, sizeof(char**));
 
-    for (i = 0; i < pipeCount + 1; i++){
+    for (i = 0; i < numCommands; i++){
         tokenizedCommands[i] = commandTokenizer(commands[i], delimiter);
     }
 
+    int argCount = 0;
     int j;
-    for (i = 0; tokenizedCommands[i] != NULL; i++){
-        printf("Current command: %s\n\n", commands[i]);
-        for (j = 0; tokenizedCommands[i][j] != NULL; j++){
-            printf("arg[%d]: %s\n", j, tokenizedCommands[i][j]);
+    for (i = 0; i < numCommands; i++){
+        for (j = 0; tokenizedCommands[j] != NULL; j++){
+            argCount++;
         }
-        printf("\n");
+        streams = getIOStreams(tokenizedCommands[i], argCount);
+        doCommand(tokenizedCommands[i], streams[0], streams[1]);
     }
+    
 }

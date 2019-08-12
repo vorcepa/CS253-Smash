@@ -15,11 +15,11 @@ int main (){
     fputs("$ ",stderr);
     while (fgets(bfr, MAXLINE, stdin) != NULL) {
         bfr[strlen(bfr) - 1] = '\0';    //replace newline with NUL
-        executeCommand(bfr);
+        processCommand(bfr);
         fputs("$ ", stderr);
     }
 
     char exitToken[] = "exit";
-    executeCommand(exitToken);
+    processCommand(exitToken);
     return 0;
 }

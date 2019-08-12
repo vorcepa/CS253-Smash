@@ -1,1 +1,1 @@
-void executeCommand(char *str);
+void processCommand(char *str);
