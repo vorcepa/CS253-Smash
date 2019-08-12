@@ -1,2 +1,2 @@
-void executeExternal();
-int doCommand(char**, FILE*, FILE*);
+void executeExternal(char**, int, int);
+int doCommand(char**, int, int);

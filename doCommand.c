@@ -11,12 +11,29 @@
     #define TOKEN_BUFFER 1024
 #endif
 
-// possibly change return type
-void executeExternal(char** args, FILE* inputStream, FILE* outputStream){
-    printf("execute external\n");
+pid_t executeExternal(char** args, int inputFD, int outputFD){
+    fflush(stdout);
+    pid_t processID = fork();
+    
+    if (processID != 0){
+        return processID;
+    }
+
+    if (inputFD != STDIN_FILENO){
+        dup2(inputFD, STDIN_FILENO);
+        close(inputFD);
+    }
+    if (outputFD != STDOUT_FILENO){
+        dup2(outputFD, STDOUT_FILENO);
+        close(outputFD);
+    }
+    
+    execvp(args[0], args+1);
+
+    exit(0);
 }
 
-int doCommand(char** args, FILE* inputStream, FILE* outputStream){
+int doCommand(char** args, int inputFD, int outputFD){
     
     if (strcmp(args[0], "cd") == 0){
         printf("doCommand(): change directory\n");
@@ -28,7 +45,10 @@ int doCommand(char** args, FILE* inputStream, FILE* outputStream){
         printf("doCommand(): exit\n");
     }
     else{
-        executeExternal(args, inputStream, outputStream);
+        pid_t processID;
+        int status;
+        processID = executeExternal(args, inputFD, outputFD);
+        waitpid(processID, &status, 0);
     }
 
     return -1;

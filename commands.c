@@ -5,9 +5,15 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <pwd.h>
+
 #include "history.h"
 #include "doCommand.h"
+
+
+
 
 #ifndef TOKEN_BUFFER
     #define TOKEN_BUFFER 1024
@@ -175,13 +181,13 @@ char** commandTokenizer(char* command, char* delimiter){
     return retVal;
 }
 
-FILE** getIOStreams(char** argv, int numArgs){
+int* getIOFileDescriptors(char** argv, int numArgs){
     char* inputRedirect = NULL;
     char* outputRedirect = NULL;
 
-    FILE** retVal = calloc(2, sizeof(FILE*));
-    retVal[0] = stdin;
-    retVal[1] = stdout;
+    int* retVal = calloc(2, sizeof(int));
+    retVal[0] = STDIN_FILENO;
+    retVal[1] = STDOUT_FILENO;
 
     int i;
     for (i = 0; i < numArgs; i++){
@@ -204,10 +210,10 @@ FILE** getIOStreams(char** argv, int numArgs){
     }
 
     if(inputRedirect != NULL){
-        retVal[0] = fopen(inputRedirect, "r");
+        retVal[0] = open(inputRedirect, O_RDONLY);
     }
     if (outputRedirect != NULL){
-        retVal[1] = fopen(outputRedirect, "w+");
+        retVal[1] = open(outputRedirect, O_CREAT|O_TRUNC|O_WRONLY);
     }
 
     return retVal;
@@ -226,12 +232,12 @@ void processCommand(char* userInput){
             numCommands++;
         }
     }
-    FILE** streams;
 
     // copy the whole string for history
     char historyCommand[MAXLINE];
     strncpy(historyCommand, userInput, strlen(userInput) + 1);
-
+    
+    int* fileDescriptors;
     char** commands = pipeTokenizer(userInput, numCommands - 1);
     char*** tokenizedCommands = calloc(TOKEN_BUFFER, sizeof(char**));
 
@@ -241,12 +247,13 @@ void processCommand(char* userInput){
 
 
     int j;
-    for (i = 0; i < numCommands; i++){
-        int argCount = 0;
-        for (j = 0; tokenizedCommands[j] != NULL; j++){
-            argCount++;
+        for (i = 0; i < numCommands; i++){
+            int argCount = 0;
+            for (j = 0; tokenizedCommands[j] != NULL; j++){
+                argCount++;
+            }
+
+            fileDescriptors = getIOFileDescriptors(tokenizedCommands[i], argCount);
+            doCommand(tokenizedCommands[i], fileDescriptors[0], fileDescriptors[1]);
         }
-        streams = getIOStreams(tokenizedCommands[i], argCount);
-        doCommand(tokenizedCommands[i], streams[0], streams[1]);
-    }
 }
