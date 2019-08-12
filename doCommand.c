@@ -17,6 +17,7 @@ void executeExternal(char** args, FILE* inputStream, FILE* outputStream){
 }
 
 int doCommand(char** args, FILE* inputStream, FILE* outputStream){
+    
     if (strcmp(args[0], "cd") == 0){
         printf("doCommand(): change directory\n");
     }

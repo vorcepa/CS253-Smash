@@ -190,11 +190,15 @@ FILE** getIOStreams(char** argv, int numArgs){
         case '<':
             inputRedirect = argv[i] + 1;
             memmove(&argv[i], &argv[i+1], (numArgs - i) * sizeof(char*));
+            numArgs--;
+            i--;
             break;
         
-        default:
+        case '>':
             outputRedirect = argv[i] + 1;
             memmove(&argv[i], &argv[i+1], (numArgs - i) * sizeof(char*));
+            numArgs--;
+            i--;
             break;
         }
     }
@@ -235,9 +239,10 @@ void processCommand(char* userInput){
         tokenizedCommands[i] = commandTokenizer(commands[i], delimiter);
     }
 
-    int argCount = 0;
+
     int j;
     for (i = 0; i < numCommands; i++){
+        int argCount = 0;
         for (j = 0; tokenizedCommands[j] != NULL; j++){
             argCount++;
         }
