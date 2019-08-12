@@ -249,5 +249,4 @@ void processCommand(char* userInput){
         streams = getIOStreams(tokenizedCommands[i], argCount);
         doCommand(tokenizedCommands[i], streams[0], streams[1]);
     }
-    
 }
