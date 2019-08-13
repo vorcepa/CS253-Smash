@@ -149,8 +149,8 @@ void doExit(char** flags, int numFlags){
     exit(0);
 }
 
-char** pipeTokenizer(char* userInput, int pipeCount){
-    char** retVal = calloc(pipeCount + 1, sizeof(char*));
+char** pipeTokenizer(char* userInput, int numCommands){
+    char** retVal = calloc(numCommands, sizeof(char*));
     int i;
     char* token;
 
@@ -238,7 +238,7 @@ void processCommand(char* userInput){
     strncpy(historyCommand, userInput, strlen(userInput) + 1);
     
     int* fileDescriptors;
-    char** commands = pipeTokenizer(userInput, numCommands - 1);
+    char** commands = pipeTokenizer(userInput, numCommands);
     char*** tokenizedCommands = calloc(TOKEN_BUFFER, sizeof(char**));
 
     for (i = 0; i < numCommands; i++){
@@ -249,7 +249,7 @@ void processCommand(char* userInput){
     int j;
         for (i = 0; i < numCommands; i++){
             int argCount = 0;
-            for (j = 0; tokenizedCommands[j] != NULL; j++){
+            for (j = 0; tokenizedCommands[i][j] != NULL; j++){
                 argCount++;
             }
 

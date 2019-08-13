@@ -28,7 +28,7 @@ pid_t executeExternal(char** args, int inputFD, int outputFD){
         close(outputFD);
     }
     
-    execvp(args[0], args+1);
+    execvp(args[0], args);
 
     exit(0);
 }
