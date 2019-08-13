@@ -211,13 +211,12 @@ char** commandTokenizer(char* command, char* delimiter){
  * to be looked through to find a redirect symbol ('<'/'>')
  * @param numArgs: the number of elements in argv.
  */
-int* getIOFileDescriptors(char** argv, int numArgs){
+void getIOFileDescriptors(char** argv, int numArgs, int redirects[2]){
     char* inputRedirect = NULL;
     char* outputRedirect = NULL;
 
-    int* retVal = calloc(2, sizeof(int));
-    retVal[0] = STDIN_FILENO;
-    retVal[1] = STDOUT_FILENO;
+    redirects[0] = STDIN_FILENO;
+    redirects[1] = STDOUT_FILENO;
 
     int i;
     for (i = 0; i < numArgs; i++){
@@ -240,13 +239,13 @@ int* getIOFileDescriptors(char** argv, int numArgs){
     }
 
     if(inputRedirect != NULL){
-        retVal[0] = open(inputRedirect, O_RDONLY);
+        redirects[0] = open(inputRedirect, O_RDONLY);
     }
     if (outputRedirect != NULL){
-        retVal[1] = open(outputRedirect, O_CREAT|O_TRUNC|O_WRONLY);
+        redirects[1] = open(outputRedirect, O_CREAT|O_TRUNC|O_WRONLY);
     }
 
-    return retVal;
+    return;
 }
 
 /**
@@ -274,12 +273,12 @@ void processCommand(char* userInput){
             numCommands++;
         }
     }
+    int redirects[2];
 
     // copy the whole string for history
     char historyCommand[MAXLINE];
     strncpy(historyCommand, userInput, strlen(userInput) + 1);
     
-    int* fileDescriptors;
     char** commands = pipeTokenizer(userInput, numCommands);
     char*** tokenizedCommands = calloc(TOKEN_BUFFER, sizeof(char**));
 
@@ -295,7 +294,14 @@ void processCommand(char* userInput){
                 argCount++;
             }
 
-            fileDescriptors = getIOFileDescriptors(tokenizedCommands[i], argCount);
-            doCommand(tokenizedCommands[i], fileDescriptors[0], fileDescriptors[1]);
+            getIOFileDescriptors(tokenizedCommands[i], argCount, redirects);
+            if (numCommands == 1){
+
+            }
+            else{
+
+            }
+
+            doCommand(tokenizedCommands[i], redirects);
         }
 }

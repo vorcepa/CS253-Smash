@@ -24,7 +24,7 @@
  * @return the processID returned by the fork() call; this will be a child process of the smash
  * program
  */
-pid_t executeExternal(char** args, int inputFD, int outputFD){
+pid_t executeExternal(char** args, int fileDescriptors[3]){
     fflush(stdout);
     pid_t processID = fork();
     
@@ -32,13 +32,13 @@ pid_t executeExternal(char** args, int inputFD, int outputFD){
         return processID;
     }
 
-    if (inputFD != STDIN_FILENO){
-        dup2(inputFD, STDIN_FILENO);
-        close(inputFD);
+    if (fileDescriptors[0] != STDIN_FILENO){
+        dup2(fileDescriptors[0], STDIN_FILENO);
+        close(fileDescriptors[0]);
     }
-    if (outputFD != STDOUT_FILENO){
-        dup2(outputFD, STDOUT_FILENO);
-        close(outputFD);
+    if (fileDescriptors[1] != STDOUT_FILENO){
+        dup2(fileDescriptors[1], STDOUT_FILENO);
+        close(fileDescriptors[1]);
     }
     
     execvp(args[0], args);
@@ -52,15 +52,10 @@ pid_t executeExternal(char** args, int inputFD, int outputFD){
  * 
  * @param args: the arguments consisting of the command to be executed, and any other
  * arguments and flags associated with it
- * @param inputFD: the input file descriptor.  By default is set to stdin, but if the user
- * specified a file, it may be redirected to some other descriptor.
- * @param outputFD: the output file descriptor.  By default is set to stdout, but if the user
- * specified a file, it may be redirected to some other descriptor.
  * 
- * @return the exit code after the command has completed.  0 for a clean execution; any other number
- * represents an error.
+ * 
  */
-int doCommand(char** args, int inputFD, int outputFD){
+pid_t doCommand(char** args, int fileDescriptors[3]){
     
     if (strcmp(args[0], "cd") == 0){
         printf("doCommand(): change directory\n");
@@ -74,7 +69,7 @@ int doCommand(char** args, int inputFD, int outputFD){
     else{
         pid_t processID;
         int status;
-        processID = executeExternal(args, inputFD, outputFD);
+        processID = executeExternal(args, fileDescriptors);
         waitpid(processID, &status, 0);
     }
 
