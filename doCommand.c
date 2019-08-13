@@ -11,6 +11,19 @@
     #define TOKEN_BUFFER 1024
 #endif
 
+/**
+ * Forks a new process to execute a command that is not built-in to the smash program.
+ * 
+ * @param args: the arguments consisting of the command to be executed, and any other
+ * arguments and flags associated with it
+ * @param inputFD: the input file descriptor.  By default is set to stdin, but if the user
+ * specified a file, it may be redirected to some other descriptor.
+ * @param outputFD: the output file descriptor.  By default is set to stdout, but if the user
+ * specified a file, it may be redirected to some other descriptor.
+ * 
+ * @return the processID returned by the fork() call; this will be a child process of the smash
+ * program
+ */
 pid_t executeExternal(char** args, int inputFD, int outputFD){
     fflush(stdout);
     pid_t processID = fork();
@@ -33,6 +46,20 @@ pid_t executeExternal(char** args, int inputFD, int outputFD){
     exit(0);
 }
 
+/**
+ * Determines if the command to be executed is an internal or external command
+ * to be executed.  Sends the appropriate information to the appropriate function for execution.
+ * 
+ * @param args: the arguments consisting of the command to be executed, and any other
+ * arguments and flags associated with it
+ * @param inputFD: the input file descriptor.  By default is set to stdin, but if the user
+ * specified a file, it may be redirected to some other descriptor.
+ * @param outputFD: the output file descriptor.  By default is set to stdout, but if the user
+ * specified a file, it may be redirected to some other descriptor.
+ * 
+ * @return the exit code after the command has completed.  0 for a clean execution; any other number
+ * represents an error.
+ */
 int doCommand(char** args, int inputFD, int outputFD){
     
     if (strcmp(args[0], "cd") == 0){

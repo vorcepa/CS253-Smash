@@ -149,6 +149,15 @@ void doExit(char** flags, int numFlags){
     exit(0);
 }
 
+/*
+ * Separates each command by each pipe symbol.
+ * 
+ * @param userInput: the unmodified user input string. This is the string
+ * that will be searched through to find pipes for separation.
+ * @param numCommands: the number of commands in userInput, equal to n + 1 pipe symbols.
+ * 
+ * @return an array of strings, where each string is one command.  
+ */
 char** pipeTokenizer(char* userInput, int numCommands){
     char** retVal = calloc(numCommands, sizeof(char*));
     int i;
@@ -166,6 +175,17 @@ char** pipeTokenizer(char* userInput, int numCommands){
     return retVal;
 }
 
+/**
+ * Separates each argument within a single command in to its own token.
+ * This function is called after each command is separated and tokenized by pipe.
+ * 
+ * @param command: one command, a subset of the user input
+ * @delimiter: the string that the tokenizer is going to use to separate the command
+ * in to its constituent arguments
+ * 
+ * @return an array of strings representing the command now separated in to individual
+ * arguments
+ */
 char** commandTokenizer(char* command, char* delimiter){
     int i = 0;
     char** retVal = calloc(TOKEN_BUFFER, sizeof(char*));
@@ -181,6 +201,16 @@ char** commandTokenizer(char* command, char* delimiter){
     return retVal;
 }
 
+/**
+ * Checks the tokenized arguments for an input/output redirect.  By default,
+ * the I/O is stdin and stdout.  If the user specifies a different input or output 
+ * (from or to a file, respectively), the read/write stream is directed to that file
+ * instead of the default.
+ * 
+ * @param argv: array of arguments in a single command; these are the values that are going
+ * to be looked through to find a redirect symbol ('<'/'>')
+ * @param numArgs: the number of elements in argv.
+ */
 int* getIOFileDescriptors(char** argv, int numArgs){
     char* inputRedirect = NULL;
     char* outputRedirect = NULL;
@@ -219,6 +249,18 @@ int* getIOFileDescriptors(char** argv, int numArgs){
     return retVal;
 }
 
+/**
+ * Takes the user input and calls the functions needed to process it.  A parser is called
+ * to separate the commands by pipe symbols.  For each command separated in this fashion,
+ * it is further separated by each argument, separated by a space.  These are stored in memory,
+ * which this function then passes on to the function that ultimately executes the command.
+ * 
+ * In addition, the full line of the user input is copied.  The parsers change the original string,
+ * so this copy is stored so that it may be listed in the history command.
+ * 
+ * @param userInput: the current line written to the stream to be processed.  Can be from
+ * typing in to the console, or received from a file stream.
+ */
 void processCommand(char* userInput){
     if (strlen(userInput) == 0){
         return;
