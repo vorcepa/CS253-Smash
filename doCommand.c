@@ -13,21 +13,21 @@
 
 /**
  * Forks a new process to execute a command that is not built-in to the smash program.
- * 
+ *
  * @param args: the arguments consisting of the command to be executed, and any other
  * arguments and flags associated with it
  * @param inputFD: the input file descriptor.  By default is set to stdin, but if the user
  * specified a file, it may be redirected to some other descriptor.
  * @param outputFD: the output file descriptor.  By default is set to stdout, but if the user
  * specified a file, it may be redirected to some other descriptor.
- * 
+ *
  * @return the processID returned by the fork() call; this will be a child process of the smash
  * program
  */
 pid_t executeExternal(char** args, int fileDescriptors[3]){
     fflush(stdout);
     pid_t processID = fork();
-    
+
     if (processID != 0){
         return processID;
     }
@@ -40,7 +40,10 @@ pid_t executeExternal(char** args, int fileDescriptors[3]){
         dup2(fileDescriptors[1], STDOUT_FILENO);
         close(fileDescriptors[1]);
     }
-    
+    if (fileDescriptors[2] >= 0) {
+	close(fileDescriptors[2]);
+    }
+
     execvp(args[0], args);
 
     exit(0);
@@ -49,14 +52,14 @@ pid_t executeExternal(char** args, int fileDescriptors[3]){
 /**
  * Determines if the command to be executed is an internal or external command
  * to be executed.  Sends the appropriate information to the appropriate function for execution.
- * 
+ *
  * @param args: the arguments consisting of the command to be executed, and any other
  * arguments and flags associated with it
- * 
- * 
+ *
+ *
  */
 pid_t doCommand(char** args, int fileDescriptors[3]){
-    
+
     if (strcmp(args[0], "cd") == 0){
         printf("doCommand(): change directory\n");
     }
@@ -67,11 +70,6 @@ pid_t doCommand(char** args, int fileDescriptors[3]){
         printf("doCommand(): exit\n");
     }
     else{
-        pid_t processID;
-        int status;
-        processID = executeExternal(args, fileDescriptors);
-        waitpid(processID, &status, 0);
+        return executeExternal(args, fileDescriptors);
     }
-
-    return -1;
 }

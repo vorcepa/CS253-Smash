@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pwd.h>
@@ -29,13 +30,13 @@ struct history* his = NULL;
 
 /*
  *  No flags to implement for smash1
- * 
+ *
  *  This is processing flags, which means the token starts with the '-' and is more than 1 character long.
  *  always start processing characters from [1] rather than [0]
  */
 char* processChDirFlag(char* token, char* currentFlags, long unsigned int currentNumFlags){
     int i;
-    int j; 
+    int j;
     int nextFlag = 0;
     bool isDuplicateFlag;
     char* retVal = malloc(TOKEN_BUFFER);
@@ -95,7 +96,7 @@ int doChangeDirectory(char* inputDirectory, char* flags){
             if ((targetDirectory = getenv("HOME")) == NULL){
                 targetDirectory = getpwuid(getuid())->pw_dir;
             }
-        } 
+        }
         else if (strcmp(inputDirectory, "-") == 0){
             targetDirectory = oldWorkingDirectory;
         }
@@ -151,12 +152,12 @@ void doExit(char** flags, int numFlags){
 
 /*
  * Separates each command by each pipe symbol.
- * 
+ *
  * @param userInput: the unmodified user input string. This is the string
  * that will be searched through to find pipes for separation.
  * @param numCommands: the number of commands in userInput, equal to n + 1 pipe symbols.
- * 
- * @return an array of strings, where each string is one command.  
+ *
+ * @return an array of strings, where each string is one command.
  */
 char** pipeTokenizer(char* userInput, int numCommands){
     char** retVal = calloc(numCommands, sizeof(char*));
@@ -178,11 +179,11 @@ char** pipeTokenizer(char* userInput, int numCommands){
 /**
  * Separates each argument within a single command in to its own token.
  * This function is called after each command is separated and tokenized by pipe.
- * 
+ *
  * @param command: one command, a subset of the user input
  * @delimiter: the string that the tokenizer is going to use to separate the command
  * in to its constituent arguments
- * 
+ *
  * @return an array of strings representing the command now separated in to individual
  * arguments
  */
@@ -203,17 +204,19 @@ char** commandTokenizer(char* command, char* delimiter){
 
 /**
  * Checks the tokenized arguments for an input/output redirect.  By default,
- * the I/O is stdin and stdout.  If the user specifies a different input or output 
+ * the I/O is stdin and stdout.  If the user specifies a different input or output
  * (from or to a file, respectively), the read/write stream is directed to that file
  * instead of the default.
- * 
+ *
  * @param argv: array of arguments in a single command; these are the values that are going
  * to be looked through to find a redirect symbol ('<'/'>')
  * @param numArgs: the number of elements in argv.
  */
 void getIOFileDescriptors(char** argv, int redirects[2]){
-    int numArgs;
-    for (numArgs = 0; argv != NULL; numArgs++);
+    int numArgs = 0;
+    for (int i = 0; argv[i] != NULL; i++) {
+	    numArgs++;
+    }
 
     char* inputRedirect = NULL;
     char* outputRedirect = NULL;
@@ -231,7 +234,7 @@ void getIOFileDescriptors(char** argv, int redirects[2]){
             numArgs--;
             i--;
             break;
-        
+
         case '>':
             outputRedirect = argv[i] + 1;
             memmove(&argv[i], &argv[i+1], (numArgs - i) * sizeof(char*));
@@ -256,10 +259,10 @@ void getIOFileDescriptors(char** argv, int redirects[2]){
  * to separate the commands by pipe symbols.  For each command separated in this fashion,
  * it is further separated by each argument, separated by a space.  These are stored in memory,
  * which this function then passes on to the function that ultimately executes the command.
- * 
+ *
  * In addition, the full line of the user input is copied.  The parsers change the original string,
  * so this copy is stored so that it may be listed in the history command.
- * 
+ *
  * @param userInput: the current line written to the stream to be processed.  Can be from
  * typing in to the console, or received from a file stream.
  */
@@ -283,7 +286,7 @@ void processCommand(char* userInput){
     // copy the whole string for history
     char historyCommand[MAXLINE];
     strncpy(historyCommand, userInput, strlen(userInput) + 1);
-    
+
     char** commands = pipeTokenizer(userInput, numCommands);
     char*** tokenizedCommands = calloc(TOKEN_BUFFER, sizeof(char**));
 
@@ -293,11 +296,7 @@ void processCommand(char* userInput){
 
 
     int j;
-    int argCount = 0;
     for (int i = 0; i < numCommands - 1; i++) {
-        for (j = 0; tokenizedCommands[i][j] != NULL; j++){
-            argCount++;
-        }
         getIOFileDescriptors(tokenizedCommands[i], redirects);
         if (redirects[0] != STDIN_FILENO) {
             if (fds[0] != STDIN_FILENO) {
@@ -306,6 +305,9 @@ void processCommand(char* userInput){
             fds[0] = redirects[0];
         }
         pipe(fds+1);
+	int tmp = fds[1];
+	fds[1] = fds[2];
+	fds[2] = tmp;
         if (redirects[1] != STDOUT_FILENO) {
             close(fds[1]);
             fds[1] = redirects[1];
@@ -320,14 +322,27 @@ void processCommand(char* userInput){
 
     getIOFileDescriptors(tokenizedCommands[numCommands-1], redirects);
     if (redirects[0] != STDIN_FILENO) {
-        close(fds[0]);
+	if (fds[0] != STDIN_FILENO) {
+	    close(fds[0]);
+	}
         fds[0] = redirects[0];
     }
     fds[1] = redirects[1];
     fds[2] = -1;
     processID = doCommand(tokenizedCommands[numCommands-1], fds);
-    close(fds[0]);
+    if (fds[0] != STDIN_FILENO) {
+	close(fds[0]);
+    }
     if (fds[1] != STDOUT_FILENO) {
         close(fds[1]);
     }
+
+    for (i = 0; i < numCommands; i++) {
+	    free(tokenizedCommands[i]);
+    }
+    free(tokenizedCommands);
+    free(commands);
+
+    int status;
+    waitpid(processID, &status, 0);
 }
