@@ -211,7 +211,10 @@ char** commandTokenizer(char* command, char* delimiter){
  * to be looked through to find a redirect symbol ('<'/'>')
  * @param numArgs: the number of elements in argv.
  */
-void getIOFileDescriptors(char** argv, int numArgs, int redirects[2]){
+void getIOFileDescriptors(char** argv, int redirects[2]){
+    int numArgs;
+    for (numArgs = 0; argv != NULL; numArgs++);
+
     char* inputRedirect = NULL;
     char* outputRedirect = NULL;
 
@@ -274,6 +277,8 @@ void processCommand(char* userInput){
         }
     }
     int redirects[2];
+    int fds[3] = {STDIN_FILENO, 0, -1};
+    pid_t processID;
 
     // copy the whole string for history
     char historyCommand[MAXLINE];
@@ -288,20 +293,41 @@ void processCommand(char* userInput){
 
 
     int j;
-        for (i = 0; i < numCommands; i++){
-            int argCount = 0;
-            for (j = 0; tokenizedCommands[i][j] != NULL; j++){
-                argCount++;
-            }
-
-            getIOFileDescriptors(tokenizedCommands[i], argCount, redirects);
-            if (numCommands == 1){
-
-            }
-            else{
-
-            }
-
-            doCommand(tokenizedCommands[i], redirects);
+    int argCount = 0;
+    for (int i = 0; i < numCommands - 1; i++) {
+        for (j = 0; tokenizedCommands[i][j] != NULL; j++){
+            argCount++;
         }
+        getIOFileDescriptors(tokenizedCommands[i], redirects);
+        if (redirects[0] != STDIN_FILENO) {
+            if (fds[0] != STDIN_FILENO) {
+                close(fds[0]);
+            }
+            fds[0] = redirects[0];
+        }
+        pipe(fds+1);
+        if (redirects[1] != STDOUT_FILENO) {
+            close(fds[1]);
+            fds[1] = redirects[1];
+        }
+        doCommand(tokenizedCommands[i], fds);
+        if (fds[0] != STDIN_FILENO) {
+            close(fds[0]);
+        }
+        close(fds[1]);
+        fds[0] = fds[2]; // pipe output is next input
+    }
+
+    getIOFileDescriptors(tokenizedCommands[numCommands-1], redirects);
+    if (redirects[0] != STDIN_FILENO) {
+        close(fds[0]);
+        fds[0] = redirects[0];
+    }
+    fds[1] = redirects[1];
+    fds[2] = -1;
+    processID = doCommand(tokenizedCommands[numCommands-1], fds);
+    close(fds[0]);
+    if (fds[1] != STDOUT_FILENO) {
+        close(fds[1]);
+    }
 }
