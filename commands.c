@@ -294,8 +294,6 @@ void processCommand(char* userInput){
         tokenizedCommands[i] = commandTokenizer(commands[i], delimiter);
     }
 
-
-    int j;
     for (int i = 0; i < numCommands - 1; i++) {
         getIOFileDescriptors(tokenizedCommands[i], redirects);
         if (redirects[0] != STDIN_FILENO) {
