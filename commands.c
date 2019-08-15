@@ -13,14 +13,41 @@
 #include "history.h"
 #include "doCommand.h"
 
-
-
-
 #ifndef TOKEN_BUFFER
     #define TOKEN_BUFFER 1024
 #endif
 
 #define PATH_BUFFER 1024
+
+struct processList{
+    pid_t* processID;
+    int numProcesses;
+    int capacity;
+};
+
+struct processList jobs = {NULL, 0, 0};
+
+void enqueueJob(pid_t processID){
+    if (jobs.processID == NULL){
+        jobs.capacity = 10;
+        jobs.processID = malloc(jobs.capacity * sizeof(pid_t));
+    }
+    else if (jobs.numProcesses >= jobs.capacity){
+        jobs.capacity *= 2;
+        jobs.processID = realloc(jobs.processID, jobs.capacity * sizeof(pid_t));
+    }
+
+    jobs.processID[jobs.numProcesses] = processID;
+    jobs.numProcesses++;
+}
+
+void resetJobs(void){
+    jobs.numProcesses = 0;
+    if(jobs.capacity > 16){
+        jobs.capacity = 16;
+        jobs.processID = realloc(jobs.processID, jobs.capacity * sizeof(pid_t));
+    }
+}
 
 char oldWorkingDirectory[PATH_BUFFER] = {0};
 char currentWorkingDirectory[PATH_BUFFER];
@@ -266,9 +293,9 @@ void getIOFileDescriptors(char** argv, int redirects[2]){
  * @param userInput: the current line written to the stream to be processed.  Can be from
  * typing in to the console, or received from a file stream.
  */
-void processCommand(char* userInput){
+int processCommand(char* userInput){
     if (strlen(userInput) == 0){
-        return;
+        return 0;
     }
 
     char delimiter[3] = " \t";
@@ -303,14 +330,17 @@ void processCommand(char* userInput){
             fds[0] = redirects[0];
         }
         pipe(fds+1);
-	int tmp = fds[1];
-	fds[1] = fds[2];
-	fds[2] = tmp;
+        int tmp = fds[1];
+        fds[1] = fds[2];
+        fds[2] = tmp;
+
         if (redirects[1] != STDOUT_FILENO) {
             close(fds[1]);
             fds[1] = redirects[1];
         }
-        doCommand(tokenizedCommands[i], fds);
+
+        processID = doCommand(tokenizedCommands[i], fds);
+        enqueueJob(processID);
         if (fds[0] != STDIN_FILENO) {
             close(fds[0]);
         }
@@ -328,8 +358,9 @@ void processCommand(char* userInput){
     fds[1] = redirects[1];
     fds[2] = -1;
     processID = doCommand(tokenizedCommands[numCommands-1], fds);
+    enqueueJob(processID);
     if (fds[0] != STDIN_FILENO) {
-	close(fds[0]);
+	    close(fds[0]);
     }
     if (fds[1] != STDOUT_FILENO) {
         close(fds[1]);
@@ -343,4 +374,6 @@ void processCommand(char* userInput){
 
     int status;
     waitpid(processID, &status, 0);
+    resetJobs();
+    return status;
 }

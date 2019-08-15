@@ -1,1 +1,1 @@
-void processCommand(char *str);
+int processCommand(char *str);

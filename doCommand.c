@@ -31,6 +31,7 @@ pid_t executeExternal(char** args, int fileDescriptors[3]){
     if (processID != 0){
         return processID;
     }
+    signal(SIGINT, SIG_DFL);
 
     if (fileDescriptors[0] != STDIN_FILENO){
         dup2(fileDescriptors[0], STDIN_FILENO);
@@ -44,9 +45,8 @@ pid_t executeExternal(char** args, int fileDescriptors[3]){
 	close(fileDescriptors[2]);
     }
 
-    execvp(args[0], args);
+    exit(execvp(args[0], args));
 
-    exit(0);
 }
 
 /**
@@ -70,6 +70,13 @@ pid_t doCommand(char** args, int fileDescriptors[3]){
         printf("doCommand(): exit\n");
     }
     else{
-        return executeExternal(args, fileDescriptors);
+        int status;
+        pid_t pid;
+        executeExternal(args, fileDescriptors);
+        pid = wait(&status);
+        fprintf(stderr, "%d exited, status = %d\n", pid, status);
+        return pid;
     }
+
+    return -1;
 }
