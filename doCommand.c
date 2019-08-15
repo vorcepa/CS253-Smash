@@ -7,10 +7,13 @@
 #include <sys/wait.h>
 #include <string.h>
 
+#include "history.h"
+
 #ifndef TOKEN_BUFFER
     #define TOKEN_BUFFER 1024
 #endif
 
+extern struct history* his;
 /**
  * Forks a new process to execute a command that is not built-in to the smash program.
  *
@@ -64,18 +67,19 @@ pid_t doCommand(char** args, int fileDescriptors[3]){
         printf("doCommand(): change directory\n");
     }
     else if (strcmp(args[0], "history") == 0){
-        printf("doCommand(): history\n");
+        
+        print_history(his);
     }
     else if (strcmp(args[0], "exit") == 0){
         printf("doCommand(): exit\n");
     }
     else{
         int status;
-        pid_t pid;
-        executeExternal(args, fileDescriptors);
-        pid = wait(&status);
-        fprintf(stderr, "%d exited, status = %d\n", pid, status);
-        return pid;
+        // pid_t pid;
+
+        // pid = wait(&status);
+        // fprintf(stderr, "%d exited, status = %d\n", pid, status);
+        return executeExternal(args, fileDescriptors);
     }
 
     return -1;

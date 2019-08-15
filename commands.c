@@ -12,6 +12,7 @@
 
 #include "history.h"
 #include "doCommand.h"
+#include "smash.h"
 
 #ifndef TOKEN_BUFFER
     #define TOKEN_BUFFER 1024
@@ -52,8 +53,8 @@ void resetJobs(void){
 char oldWorkingDirectory[PATH_BUFFER] = {0};
 char currentWorkingDirectory[PATH_BUFFER];
 char prevWorkingDirectory[PATH_BUFFER];
+extern struct history* his;
 bool previousCD = false;
-struct history* his = NULL;
 
 /*
  *  No flags to implement for smash1
@@ -374,6 +375,7 @@ int processCommand(char* userInput){
 
     int status;
     waitpid(processID, &status, 0);
+    add_history(his, historyCommand, status);
     resetJobs();
     return status;
 }

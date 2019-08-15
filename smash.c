@@ -11,6 +11,8 @@
 
 #define MAXLINE 4096
 
+struct history* his = NULL;
+
 void handle_interrupt(int signal){
     const char c[] = "^C\n";
     write(STDERR_FILENO, c, sizeof(c));
@@ -21,6 +23,7 @@ void handle_interrupt(int signal){
 int main (){
     signal(SIGINT, handle_interrupt);
     char bfr[MAXLINE];
+    his = init_history(10);
     
     fputs("$ ", stderr);
     while (fgets(bfr, MAXLINE, stdin) != NULL) {
@@ -29,6 +32,7 @@ int main (){
         fputs("$ ", stderr);
     }
 
+    clear_history(his);
     char exitToken[] = "exit";
     processCommand(exitToken);
     return 0;
