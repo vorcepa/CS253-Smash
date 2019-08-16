@@ -34,50 +34,6 @@ extern struct history* his;
 extern pthread_mutex_t wait_children_mutex;
 bool previousCD = false;
 
-/*
- *  No flags to implement for smash1
- *
- *  This is processing flags, which means the token starts with the '-' and is more than 1 character long.
- *  always start processing characters from [1] rather than [0]
- */
-char* processChDirFlag(char* token, char* currentFlags, long unsigned int currentNumFlags){
-    int i;
-    int j;
-    int nextFlag = 0;
-    bool isDuplicateFlag;
-    char* retVal = malloc(TOKEN_BUFFER);
-    *retVal = 0;
-
-    if (strlen(token) > (TOKEN_BUFFER - currentNumFlags)){
-        strncpy(retVal, "errorB", TOKEN_BUFFER);
-    }
-    else{
-        for (i = 1; i < strlen(token); i++){
-            isDuplicateFlag = false;
-            for (j = 0; j < strlen(currentFlags); j++){
-                if (currentFlags[j] == token[i]){
-                    isDuplicateFlag = true;
-                    break;
-                }
-            }
-            for (j = 0; j < strlen(retVal); j++){
-                if (retVal[j] == token[i]){
-                    isDuplicateFlag = true;
-                    break;
-                }
-            }
-            if (!isDuplicateFlag){
-                retVal[nextFlag] = token[i];
-                nextFlag++;
-            }
-        }
-    }
-
-    retVal[strlen(retVal)] = '\0';
-
-    return retVal;
-}
-
 int doChangeDirectory(char** args){
     int exitStatus = 0;
     char* directoryArg = args[1];
