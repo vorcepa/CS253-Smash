@@ -41,6 +41,10 @@ extern struct history* his;
  *
  */
 pid_t doCommand(char** args, int fileDescriptors[3]){
+    if (strcmp(args[0], "exit") == 0){
+        exit(0);
+    }
+
     fflush(stdout);
     pid_t processID = fork();
 
@@ -58,21 +62,16 @@ pid_t doCommand(char** args, int fileDescriptors[3]){
         close(fileDescriptors[1]);
     }
     if (fileDescriptors[2] >= 0) {
-	close(fileDescriptors[2]);
+	    close(fileDescriptors[2]);
     }
 
     if (strcmp(args[0], "cd") == 0){
-        doChangeDirectory(args);
+        exit(doChangeDirectory(args));
     }
     else if (strcmp(args[0], "history") == 0){
-        print_history(his);
-    }
-    else if (strcmp(args[0], "exit") == 0){
-        exit(0);
+        exit(print_history(his));
     }
     else{
         exit(execvp(args[0], args));
     }
-
-    return -1;
 }
