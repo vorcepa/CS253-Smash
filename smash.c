@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <pthread.h>
 
 #include "smash.h"
 #include "history.h"
@@ -12,6 +13,7 @@
 #define MAXLINE 4096
 
 struct history* his = NULL;
+extern struct processList jobs;
 
 void handle_interrupt(int signal){
     const char c[] = "^C\n";

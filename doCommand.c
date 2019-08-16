@@ -6,8 +6,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "history.h"
+#include "smash.h"
 
 #ifndef TOKEN_BUFFER
     #define TOKEN_BUFFER 1024
@@ -62,19 +64,19 @@ pid_t executeExternal(char** args, int fileDescriptors[3]){
  *
  */
 pid_t doCommand(char** args, int fileDescriptors[3]){
+    // pthread_t threadID;
 
     if (strcmp(args[0], "cd") == 0){
-        printf("doCommand(): change directory\n");
+        doChangeDirectory(args);
     }
     else if (strcmp(args[0], "history") == 0){
-        
         print_history(his);
     }
     else if (strcmp(args[0], "exit") == 0){
-        printf("doCommand(): exit\n");
+        exit(0);
     }
     else{
-        int status;
+        // int status;
         // pid_t pid;
 
         // pid = wait(&status);

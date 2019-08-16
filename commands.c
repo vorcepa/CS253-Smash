@@ -9,6 +9,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pwd.h>
+#include <pthread.h>
 
 #include "history.h"
 #include "doCommand.h"
@@ -20,13 +21,13 @@
 
 #define PATH_BUFFER 1024
 
-struct processList{
-    pid_t* processID;
-    int numProcesses;
-    int capacity;
-};
-
 struct processList jobs = {NULL, 0, 0};
+
+void* threadWaitpid(void* arg){
+
+
+    return NULL;
+}
 
 void enqueueJob(pid_t processID){
     if (jobs.processID == NULL){
@@ -100,36 +101,30 @@ char* processChDirFlag(char* token, char* currentFlags, long unsigned int curren
     return retVal;
 }
 
-int doChangeDirectory(char* inputDirectory, char* flags){
+int doChangeDirectory(char** args){
     int exitStatus = 0;
+    char* directoryArg = args[1];
 
     int cdErrNum;
     const char* targetDirectory;
     char targetFullDirectory[PATH_BUFFER] = {0};
 
-    if (strlen(flags) > 1){
-        fprintf(stderr, "Flags not implemented.\n");
-        fprintf(stderr, "Usage: cd [directory path]\n");
-        exitStatus = 1;
-        return exitStatus;
-    }
-
-    if (inputDirectory == NULL){
+    if (directoryArg == NULL){
        if ((targetDirectory = getenv("HOME")) == NULL) {
            targetDirectory = getpwuid(getuid())->pw_dir;
        }
     }
     else{
-        if (strcmp(inputDirectory, "~") == 0){
+        if (strcmp(directoryArg, "~") == 0){
             if ((targetDirectory = getenv("HOME")) == NULL){
                 targetDirectory = getpwuid(getuid())->pw_dir;
             }
         }
-        else if (strcmp(inputDirectory, "-") == 0){
+        else if (strcmp(directoryArg, "-") == 0){
             targetDirectory = oldWorkingDirectory;
         }
         else{
-            targetDirectory = inputDirectory;
+            targetDirectory = directoryArg;
         }
     }
     // for "cd -"; roundabout way to stop this from working if cd has not been called before.  $OLDPWD is not set
@@ -143,10 +138,10 @@ int doChangeDirectory(char* inputDirectory, char* flags){
     if (cdErrNum != 0){
         strncpy(targetFullDirectory, currentWorkingDirectory, PATH_BUFFER);
         strncat(targetFullDirectory, "/", strlen("/"));
-        if (inputDirectory[0] == '/'){
-            inputDirectory++;
+        if (directoryArg[0] == '/'){
+            directoryArg++;
         }
-        strncat(targetFullDirectory, inputDirectory, strlen(inputDirectory));
+        strncat(targetFullDirectory, directoryArg, strlen(directoryArg));
         cdErrNum = chdir(targetFullDirectory);
     }
     if (cdErrNum == 0){
@@ -159,23 +154,15 @@ int doChangeDirectory(char* inputDirectory, char* flags){
         previousCD = true;
     }
     else{
-        if (inputDirectory[0] == '/'){
-                inputDirectory++;
+        if (directoryArg[0] == '/'){
+                directoryArg++;
         }
-        perror(inputDirectory);
+        perror(directoryArg);
         exitStatus = 1;
     }
 
     memset(targetFullDirectory, 0, strlen(targetFullDirectory));
     return exitStatus;
-}
-
-void doExit(char** flags, int numFlags){
-    if (numFlags != 0){
-        printf("smash: exit: %s -- invalid argument\n", flags[0]);
-        exit(255);
-    }
-    exit(0);
 }
 
 /*
@@ -295,6 +282,9 @@ void getIOFileDescriptors(char** argv, int redirects[2]){
  * typing in to the console, or received from a file stream.
  */
 int processCommand(char* userInput){
+    while (userInput[0] == ' ' || userInput[0] == '\t'){
+        userInput++;
+    }
     if (strlen(userInput) == 0){
         return 0;
     }
@@ -374,7 +364,7 @@ int processCommand(char* userInput){
     free(commands);
 
     int status;
-    waitpid(processID, &status, 0);
+    // waitpid(processID, &status, 0);
     add_history(his, historyCommand, status);
     resetJobs();
     return status;
