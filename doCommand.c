@@ -17,6 +17,7 @@
 
 extern struct history* his;
 /**
+ * ------------ OLD COMMENTS FOR EXECUTEEXTERNAL() *** MERGE WITH DOCOMMAND() -----------------
  * Forks a new process to execute a command that is not built-in to the smash program.
  *
  * @param args: the arguments consisting of the command to be executed, and any other
@@ -29,7 +30,17 @@ extern struct history* his;
  * @return the processID returned by the fork() call; this will be a child process of the smash
  * program
  */
-pid_t executeExternal(char** args, int fileDescriptors[3]){
+
+/**
+ * Determines if the command to be executed is an internal or external command
+ * to be executed.  Sends the appropriate information to the appropriate function for execution.
+ *
+ * @param args: the arguments consisting of the command to be executed, and any other
+ * arguments and flags associated with it
+ *
+ *
+ */
+pid_t doCommand(char** args, int fileDescriptors[3]){
     fflush(stdout);
     pid_t processID = fork();
 
@@ -50,22 +61,6 @@ pid_t executeExternal(char** args, int fileDescriptors[3]){
 	close(fileDescriptors[2]);
     }
 
-    exit(execvp(args[0], args));
-
-}
-
-/**
- * Determines if the command to be executed is an internal or external command
- * to be executed.  Sends the appropriate information to the appropriate function for execution.
- *
- * @param args: the arguments consisting of the command to be executed, and any other
- * arguments and flags associated with it
- *
- *
- */
-pid_t doCommand(char** args, int fileDescriptors[3]){
-    // pthread_t threadID;
-
     if (strcmp(args[0], "cd") == 0){
         doChangeDirectory(args);
     }
@@ -76,12 +71,7 @@ pid_t doCommand(char** args, int fileDescriptors[3]){
         exit(0);
     }
     else{
-        // int status;
-        // pid_t pid;
-
-        // pid = wait(&status);
-        // fprintf(stderr, "%d exited, status = %d\n", pid, status);
-        return executeExternal(args, fileDescriptors);
+        exit(execvp(args[0], args));
     }
 
     return -1;
