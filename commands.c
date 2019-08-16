@@ -21,40 +21,17 @@
 
 #define PATH_BUFFER 1024
 
-struct processList jobs = {NULL, 0, 0};
-
 void* threadWaitpid(void* arg){
 
 
     return NULL;
 }
 
-void enqueueJob(pid_t processID){
-    if (jobs.processID == NULL){
-        jobs.capacity = 10;
-        jobs.processID = malloc(jobs.capacity * sizeof(pid_t));
-    }
-    else if (jobs.numProcesses >= jobs.capacity){
-        jobs.capacity *= 2;
-        jobs.processID = realloc(jobs.processID, jobs.capacity * sizeof(pid_t));
-    }
-
-    jobs.processID[jobs.numProcesses] = processID;
-    jobs.numProcesses++;
-}
-
-void resetJobs(void){
-    jobs.numProcesses = 0;
-    if(jobs.capacity > 16){
-        jobs.capacity = 16;
-        jobs.processID = realloc(jobs.processID, jobs.capacity * sizeof(pid_t));
-    }
-}
-
 char oldWorkingDirectory[PATH_BUFFER] = {0};
 char currentWorkingDirectory[PATH_BUFFER];
 char prevWorkingDirectory[PATH_BUFFER];
 extern struct history* his;
+extern pthread_mutex_t wait_children_mutex;
 bool previousCD = false;
 
 /*
@@ -331,7 +308,6 @@ int processCommand(char* userInput){
         }
 
         processID = doCommand(tokenizedCommands[i], fds);
-        enqueueJob(processID);
         if (fds[0] != STDIN_FILENO) {
             close(fds[0]);
         }
@@ -349,7 +325,6 @@ int processCommand(char* userInput){
     fds[1] = redirects[1];
     fds[2] = -1;
     processID = doCommand(tokenizedCommands[numCommands-1], fds);
-    enqueueJob(processID);
     if (fds[0] != STDIN_FILENO) {
 	    close(fds[0]);
     }
@@ -363,9 +338,12 @@ int processCommand(char* userInput){
     free(tokenizedCommands);
     free(commands);
 
-    int status;
-    // waitpid(processID, &status, 0);
+    pthread_mutex_unlock(&wait_children_mutex);
+    int status = 0;
+    if (processID != 0) {
+        waitpid(processID, &status, 0);
+    }
     add_history(his, historyCommand, status);
-    resetJobs();
+    pthread_mutex_lock(&wait_children_mutex);
     return status;
 }
