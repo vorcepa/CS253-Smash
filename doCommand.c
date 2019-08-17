@@ -17,28 +17,22 @@
 
 extern struct history* his;
 /**
- * ------------ OLD COMMENTS FOR EXECUTEEXTERNAL() *** MERGE WITH DOCOMMAND() -----------------
- * Forks a new process to execute a command that is not built-in to the smash program.
- *
- * @param args: the arguments consisting of the command to be executed, and any other
- * arguments and flags associated with it
- * @param inputFD: the input file descriptor.  By default is set to stdin, but if the user
- * specified a file, it may be redirected to some other descriptor.
- * @param outputFD: the output file descriptor.  By default is set to stdout, but if the user
- * specified a file, it may be redirected to some other descriptor.
- *
- * @return the processID returned by the fork() call; this will be a child process of the smash
- * program
- */
-
-/**
- * Determines if the command to be executed is an internal or external command
- * to be executed.  Sends the appropriate information to the appropriate function for execution.
- *
- * @param args: the arguments consisting of the command to be executed, and any other
- * arguments and flags associated with it
- *
- *
+ * Called by processCommands() in commands.c.  This function first checks if the command is exit.  If so,
+ * nothing else needs to be done -> exit smash.  Otherwise, the next step is to fork a new process, regardless
+ * if its an internal (e.g. cd, history) or external command (ls, pwd, wc, etc.).  After the fork, the parent process
+ * is returned.  A signal handler is made since CTRL+C shouldn't exit smash while a command is currently in execution.
+ * Next, the file descriptors are checked against STDIN and STDOUT; if they're different, then there's a pipe, and we 
+ * set the pipe to read in/out, and close the file descriptors here, since we won't get another chance to.  After that,
+ * We determine which command is being executed (cd, history, or some external command).  The appropriate function is called,
+ * and all this function needs to do is exit when that process completes - the behaviour of that execution is handled
+ * elsewhere.
+ * 
+ * @param args: a single command within the userinput, tokenized such that the first argument is the command itself,
+ * and the following arguments may be a necessary argument, and any optional flags.  Redirect arguments have been
+ * filtered out of the user input at this point.
+ * @param fileDescriptors: the int values associated with files to be read and written to.  fileDescriptors[0] replaces
+ * STDIN to be read from, fileDescriptors[1] replaces STDOUT to write to, and fileDescriptors[2] is a carry-over from
+ * processCommands(), where it acts as the pipe for the *next* command after this one.  We simply close the descriptor here.
  */
 pid_t doCommand(char** args, int fileDescriptors[3]){
     if (strcmp(args[0], "exit") == 0){
