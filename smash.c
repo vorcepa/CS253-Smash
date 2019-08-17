@@ -64,7 +64,5 @@ int main (){
     clear_history(his);
     pthread_cancel(wait_children_thread);
     pthread_mutex_destroy(&wait_children_mutex);
-    char exitToken[] = "exit";
-    processCommand(exitToken);
     return 0;
 }

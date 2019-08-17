@@ -1,0 +1,6 @@
+ls -a | wc
+history | grep ls
+history | grep test
+history
+wc<testCommands.txt | grep 5 > grepFound.txt
+rm -rf grepFound.txt
